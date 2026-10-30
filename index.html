@@ -236,6 +236,15 @@ input[type=range]{width:100%;min-height:44px;accent-color:var(--idc-azul);cursor
 .missions li.done{border-color:var(--verde-ok);background:var(--verde-ok-bg)}
 .missions li.done .mi{background:var(--verde-ok);border-color:var(--verde-ok);color:#fff}
 .machine{margin-top:18px}
+.e3-status{margin-top:12px;border:1.5px dashed var(--idc-azul);border-radius:10px;padding:10px 14px;background:#f6fafd;font-size:.92rem}
+.e3-status.all{border-style:solid;border-color:var(--verde-ok);background:var(--verde-ok-bg)}
+.e3-status ul{margin:6px 0 0;padding-left:20px}
+.e3-status .btn-row{margin-top:8px}
+.nudge{display:flex;gap:6px;align-items:center;margin:-2px 0 8px;font-size:.8rem;color:#555}
+.nudge button{min-width:34px;padding:4px 10px;border:1.5px solid var(--idc-azul);border-radius:8px;background:#fff;color:var(--idc-azul);font-weight:800;cursor:pointer}
+.nudge button:hover{background:#eef6fc}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.coach{margin-top:8px;font-size:.9rem;background:#eef6fc;border-left:5px solid var(--idc-azul);border-radius:var(--radio-sm);padding:9px 12px;color:#173a52}
 .machine-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:18px}
 @media (max-width:820px){.machine-grid{grid-template-columns:1fr}}
 .machine h3{margin:0 0 .3rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -303,6 +312,12 @@ details.proto p{margin:.5rem 0}
 .dial{display:flex;flex-direction:column;align-items:center;gap:4px;width:92px}
 .dial-btn{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--idc-gris3);background:#fff;font-size:1.1rem;font-weight:800;cursor:pointer;color:var(--idc-gris1)}
 .dial-in{width:76px;height:60px;text-align:center;font:700 1.7rem var(--mono);border:2px solid var(--idc-gris2);border-radius:10px;background:#1f2d38;color:var(--idc-amarillo)}
+.dial-mk{font:800 .9rem var(--mono);min-height:1.2em}
+.dial-mk.ok{color:var(--verde-ok)}.dial-mk.no{color:var(--rojo)}
+.dial-in.ok{border-color:var(--verde-ok)}.dial-in.no{border-color:var(--rojo)}
+.safe-ref{margin:10px 0 4px;font-size:.88rem;border:1.5px dashed var(--idc-azul);border-radius:10px;padding:8px 12px;background:#f6fafd}
+.safe-ref table{width:100%;border-collapse:collapse;margin-top:4px}
+.safe-ref td,.safe-ref th{padding:3px 6px;text-align:left;border-bottom:1px solid #dde6ee;font-size:.85rem}
 .dial small{font:600 .68rem var(--mono);color:var(--idc-gris1);text-align:center;line-height:1.25}
 .tr{margin-bottom:12px}
 .tr-q{margin:0}
@@ -786,6 +801,7 @@ table.t th{background:#f2f0ea;font-weight:700}
         <li data-m="m3"><span class="mi">○</span><span><b>Impresora 3D:</b> reproduce la temperatura <i>medida</i>.</span></li>
         <li data-m="m4"><span class="mi">○</span><span><b>Impresora 3D:</b> consigue una probeta <i>conforme</i>.</span></li>
       </ol>
+      <div class="e3-status" id="e3Status" aria-live="polite"></div>
 
       <!-- Máquina A -->
       <div class="card machine">
@@ -833,6 +849,7 @@ table.t th{background:#f2f0ea;font-weight:700}
           </div>
           <div>
             <div class="ctrl"><label for="dtfT">Temperatura <output id="dtfTOut" for="dtfT">120 °C</output></label><input type="range" id="dtfT" min="110" max="190" step="5" value="120"></div>
+            <div class="nudge"><button type="button" data-nudge="dtfT" data-d="-5" aria-label="Bajar temperatura 5 °C">−5</button><button type="button" data-nudge="dtfT" data-d="5" aria-label="Subir temperatura 5 °C">+5</button><span>ajuste fino</span></div>
             <div class="scale" aria-hidden="true">
               <span class="band" style="left:50%;width:25%"></span>
               <span class="mk" style="left:62.5%"><span>Obj. 160</span></span>
@@ -841,10 +858,12 @@ table.t th{background:#f2f0ea;font-weight:700}
             </div>
             <div class="scale-ends"><span>110 °C</span><span style="color:#8a5a00">■ fusión del TPU 150–170 °C</span><span>190 °C</span></div>
             <div class="ctrl"><label for="dtfTime">Tiempo de planchado <output id="dtfTimeOut" for="dtfTime">15 s</output></label><input type="range" id="dtfTime" min="5" max="30" step="1" value="15"></div>
+            <div class="nudge"><button type="button" data-nudge="dtfTime" data-d="-1" aria-label="Bajar tiempo 1 s">−1</button><button type="button" data-nudge="dtfTime" data-d="1" aria-label="Subir tiempo 1 s">+1</button><span>ajuste fino</span></div>
             <fieldset class="ctrl"><legend style="font-size:.9rem">Presión</legend>
               <div class="seg"><label><input type="radio" name="dtfP" value="uniforme" checked> Uniforme</label><label><input type="radio" name="dtfP" value="irregular"> Irregular</label></div>
             </fieldset>
             <div class="btn-row"><button class="btn btn-primary" type="button" id="pressBtn">▶ Planchar</button></div>
+            <div class="quick" id="dtfQuick" hidden><button type="button" class="btn btn-outline btn-sm" data-q="dtf-med">Cargar valores medidos (130 °C · 10 s)</button><button type="button" class="btn btn-outline btn-sm" data-q="dtf-obj">Cargar valores objetivo (160 °C · 20 s · uniforme)</button></div>
             <div id="dtfRes" aria-live="polite"></div>
           </div>
         </div>
@@ -881,6 +900,7 @@ table.t th{background:#f2f0ea;font-weight:700}
           </div>
           <div>
             <div class="ctrl"><label for="p3T">Temperatura de boquilla <output id="p3TOut" for="p3T">190 °C</output></label><input type="range" id="p3T" min="160" max="240" step="5" value="190"></div>
+            <div class="nudge"><button type="button" data-nudge="p3T" data-d="-5" aria-label="Bajar temperatura de boquilla 5 °C">−5</button><button type="button" data-nudge="p3T" data-d="5" aria-label="Subir temperatura de boquilla 5 °C">+5</button><span>ajuste fino</span></div>
             <div class="scale" aria-hidden="true">
               <span class="mk" style="left:62.5%"><span>Obj. 210</span></span>
               <span class="mk meas" style="left:18.75%"><span>Med. 175</span></span>
@@ -888,6 +908,7 @@ table.t th{background:#f2f0ea;font-weight:700}
             </div>
             <div class="scale-ends"><span>160 °C</span><span>240 °C</span></div>
             <div class="btn-row"><button class="btn btn-primary" type="button" id="p3Btn">▶ Imprimir probeta y probar</button></div>
+            <div class="quick" id="p3Quick" hidden><button type="button" class="btn btn-outline btn-sm" data-q="p3-med">Cargar valor medido (175 °C)</button><button type="button" class="btn btn-outline btn-sm" data-q="p3-obj">Cargar valor objetivo (210 °C)</button></div>
             <div id="p3Res" aria-live="polite"></div>
           </div>
         </div>
@@ -903,6 +924,7 @@ table.t th{background:#f2f0ea;font-weight:700}
         </div>
         <div class="btn-row"><button class="btn btn-primary" type="button" id="deltaBtn">Comprobar desviaciones</button></div>
         <div id="deltaFb" aria-live="polite"></div>
+        <div class="e3-status" id="e3Status2"></div>
       </div>
     </div>
   </div>
@@ -916,7 +938,7 @@ table.t th{background:#f2f0ea;font-weight:700}
       <div><p class="eyebrow">Ficha técnica · Verdadero o falso razonado · <span class="kolb or">OR</span></p><h2 id="fichaT">¿Por qué falla?</h2></div>
       <span class="st-state">🔒 Bloqueada</span>
     </div>
-    <p class="lock-note">🔒 Se desbloquea al completar el <b>Enigma 3 · Reproduce la falla</b>.</p>
+    <p class="lock-note">🔒 Se desbloquea al completar el <b>Enigma 3 · Reproduce la falla</b>.<span id="fichaPend" style="display:block;margin-top:6px"></span></p>
     <div class="st-body">
       <details class="card proto">
         <summary>📄 Protocolo del expediente: relación entre el defecto y el valor reportado</summary>
@@ -988,10 +1010,11 @@ table.t th{background:#f2f0ea;font-weight:700}
         <div>
           <p style="margin-top:0">La caja guarda el expediente final. Su combinación está escrita en clave: <i>«Tres ruedas, tres desvíos sin signo, en el orden en que trabaja el taller: lo que marca el termómetro de la plancha, lo que marca su cronómetro y lo que marca la boquilla.»</i></p>
           <div class="dials" role="group" aria-label="Combinación de tres ruedas">
-            <div class="dial"><button class="dial-btn" type="button" data-d="0" data-s="1" aria-label="Subir rueda 1">+</button><input class="dial-in" id="dial0" inputmode="numeric" maxlength="2" value="00" aria-label="Rueda 1: plancha, temperatura"><button class="dial-btn" type="button" data-d="0" data-s="-1" aria-label="Bajar rueda 1">−</button><small>Plancha<br>temperatura</small></div>
-            <div class="dial"><button class="dial-btn" type="button" data-d="1" data-s="1" aria-label="Subir rueda 2">+</button><input class="dial-in" id="dial1" inputmode="numeric" maxlength="2" value="00" aria-label="Rueda 2: plancha, tiempo"><button class="dial-btn" type="button" data-d="1" data-s="-1" aria-label="Bajar rueda 2">−</button><small>Plancha<br>tiempo</small></div>
-            <div class="dial"><button class="dial-btn" type="button" data-d="2" data-s="1" aria-label="Subir rueda 3">+</button><input class="dial-in" id="dial2" inputmode="numeric" maxlength="2" value="00" aria-label="Rueda 3: boquilla 3D"><button class="dial-btn" type="button" data-d="2" data-s="-1" aria-label="Bajar rueda 3">−</button><small>Boquilla<br>3D</small></div>
+            <div class="dial"><button class="dial-btn" type="button" data-d="0" data-s="1" aria-label="Subir rueda 1">+</button><input class="dial-in" id="dial0" inputmode="numeric" pattern="[0-9]*" value="00" aria-label="Rueda 1: plancha, temperatura"><span class="dial-mk" id="dialMk0" aria-hidden="true"></span><button class="dial-btn" type="button" data-d="0" data-s="-1" aria-label="Bajar rueda 1">−</button><small>Plancha<br>temperatura</small></div>
+            <div class="dial"><button class="dial-btn" type="button" data-d="1" data-s="1" aria-label="Subir rueda 2">+</button><input class="dial-in" id="dial1" inputmode="numeric" pattern="[0-9]*" value="00" aria-label="Rueda 2: plancha, tiempo"><span class="dial-mk" id="dialMk1" aria-hidden="true"></span><button class="dial-btn" type="button" data-d="1" data-s="-1" aria-label="Bajar rueda 2">−</button><small>Plancha<br>tiempo</small></div>
+            <div class="dial"><button class="dial-btn" type="button" data-d="2" data-s="1" aria-label="Subir rueda 3">+</button><input class="dial-in" id="dial2" inputmode="numeric" pattern="[0-9]*" value="00" aria-label="Rueda 3: boquilla 3D"><span class="dial-mk" id="dialMk2" aria-hidden="true"></span><button class="dial-btn" type="button" data-d="2" data-s="-1" aria-label="Bajar rueda 3">−</button><small>Boquilla<br>3D</small></div>
           </div>
+          <div class="safe-ref" id="safeRef"></div>
           <div class="btn-row" style="justify-content:center"><button class="btn btn-amarillo" type="button" id="lock2Btn">🔓 Abrir la caja</button></div>
           <div id="lock2Fb" aria-live="polite"></div>
         </div>
@@ -1882,7 +1905,7 @@ window.APP = (function () {
     gates: { registro: false, e1: false, check: false, e2: false, e3: false, ficha: false, video: false, e4: false, e5: false },
     e1: { stretchMax: 0, washes: 0, broke: false, design: "1", seen: { "1": true }, obsA: null, obsB: null, hyp: null, hypWhy: "" },
     e2: { lock: false, def: false, matched: {} },
-    e3: { missions: { m1: false, m2: false, m3: false, m4: false }, deltas: { dTemp: null, dTime: null, d3d: null }, runs: [] },
+    e3: { missions: { m1: false, m2: false, m3: false, m4: false }, deltas: { dTemp: null, dTime: null, d3d: null }, runs: [], hintLvl: 0, idle: 0 },
     ficha: { answers: {} },
     video: { ans: {} },
     e4: { solved: {} },
@@ -1982,6 +2005,10 @@ window.APP = (function () {
     $("fNombres").value = state.student.nombres; $("fApellidos").value = state.student.apellidos; $("fEmail").value = state.student.email;
     $("regBtn").textContent = "Actualizar datos";
     updateScore(false); updateProgress(); refreshLocks(); setDesign(state.e1.design || "1");
+    renderSafeRef();
+    if (state.e3.hintLvl === undefined) state.e3.hintLvl = 0;
+    if (state.e3.idle === undefined) state.e3.idle = 0;
+    updE3Status();
     if (state.e1.hyp) $("revHyp").textContent = hypLabel();
     ["r1", "r2"].forEach(function (id) { if (state.e5[id] && !$(id).disabled) { $(id).value = state.e5[id]; updCounter(id); } });
     if (state.e5.ticket) all(".tk").forEach(function (x) { x.setAttribute("aria-pressed", +x.getAttribute("data-v") === state.e5.ticket ? "true" : "false"); });
@@ -2043,6 +2070,7 @@ window.APP = (function () {
     STATION_ORDER.forEach(function (x, i) { if (x.gate === gate) idx = i; });
     var st = STATION_ORDER[idx];
     if (gate === "e1") $("revHyp").textContent = hypLabel();
+    if ($("safeRef")) renderSafeRef();
     if (RESTORING) return;
     if (st && st.badge) toast("🏅 Insignia ganada: " + st.badge);
     var next = STATION_ORDER[idx + 1];
@@ -2722,10 +2750,12 @@ window.APP = (function () {
     drawMicro(r.melt);
     $("dtfRes").innerHTML = resultBox(r);
     $("pressDisp").textContent = v.T + " °C · " + v.t + " s";
+    var hitDtf = (v.T === 130 && v.t === 10 && !state.e3.missions.m1) || (r.cls === "ok" && !state.e3.missions.m2);
     logRun({ maquina: "Plancha DTF", valores: v.T + " °C · " + v.t + " s · presión " + v.p, resultado: r.title });
     var step = { set: [["#dtfT", String(v.T)], ["#dtfTime", String(v.t)]], checked: [['input[name="dtfP"][value="' + v.p + '"]', true]], click: "#pressBtn" };
     if (v.T === 130 && v.t === 10) mission("m1", ev, step);
     if (r.cls === "ok") mission("m2", ev, step);
+    if (!hitDtf) afterMiss("dtf", v);
   }
   function runPress(ev) {
     if (pressing) return;
@@ -2792,10 +2822,12 @@ window.APP = (function () {
     if (r.snap) $("partHigh").setAttribute("transform", "translate(-4 -12) rotate(12 220 146)");
     drawXsec(T);
     $("p3Res").innerHTML = resultBox(r);
+    var hitP3 = (T === 175 && !state.e3.missions.m3) || (r.cls === "ok" && !state.e3.missions.m4);
     logRun({ maquina: "Impresora 3D", valores: "boquilla " + T + " °C", resultado: r.title });
     var step = { set: [["#p3T", String(T)]], click: "#p3Btn" };
     if (T === 175) mission("m3", ev, step);
     if (r.cls === "ok") mission("m4", ev, step);
+    if (!hitP3) afterMiss("p3", { T: T });
   }
   function runPrint(ev) {
     if (printing) return;
@@ -2827,7 +2859,8 @@ window.APP = (function () {
     if (li) { li.classList.add("done"); li.querySelector(".mi").textContent = "✓"; }
     toast("✓ Misión cumplida · " + MISSIONS[id].t);
     if (ev) sparks(ev);
-    checkE3();
+    state.e3.idle = 0;
+    checkE3(); updE3Status();
   }
   function parseNum(s) {
     s = String(s).replace(/[−–—]/g, "-").replace(/,/g, ".").replace(/[^\d.\-+]/g, "");
@@ -2855,14 +2888,106 @@ window.APP = (function () {
     var done = Object.keys(DELTAS).every(function (k) { return state.e3.deltas[k] !== null; });
     if (done) {
       $("deltaBtn").disabled = true;
-      renderOk(fb, "Las tres desviaciones son negativas: ambos procesos trabajaron <b>por debajo</b> de su objetivo. Anota sus tamaños: la caja fuerte del final los pedirá.", ev);
-      checkE3(); return;
+      renderOk(fb, "Las tres desviaciones son negativas: ambos procesos trabajaron <b>por debajo</b> de su objetivo. Anota sus tamaños: la caja fuerte del final los pedirá." +
+        (missionsLeft().length ? "<br>Para cerrar el enigma aún te falta: <b>" + missionsLeft().map(function (m) { return m.short; }).join("</b>; <b>") + "</b>." : ""), ev);
+      checkE3(); updE3Status(); return;
     }
     if (empty && !wrong) { renderInfo(fb, "Completa los campos vacíos."); return; }
+    var worst = 0; Object.keys(DELTAS).forEach(function (k) { if (state.e3.deltas[k] === null) worst = Math.max(worst, state.tries["delta." + k] || 0); });
+    if (worst >= 3 && !signErr) {
+      renderRetry(fb, "Hazlo paso a paso. Plancha: 130 − 160. Si a 130 le falta para llegar a 160, ¿cuánto le falta? Ese número, con signo menos, es la desviación.",
+        "Ejemplo resuelto con otros números: medido 90, objetivo 100 → 90 − 100 = −10.",
+        "Escribe el número con su signo, sin unidades: por ejemplo «−10» o «-10».");
+      updE3Status(); return;
+    }
     renderRetry(fb,
       signErr ? "El tamaño está bien, pero falta el signo: si el valor medido es menor que el objetivo, la desviación es negativa." : "Resta en este orden: valor medido − valor objetivo.",
       "Plancha: 130 °C y 10 s medidos frente a 160 °C y 20 s de objetivo. Boquilla: 175 °C medidos frente a 210 °C.",
       "El signo dice hacia dónde se desvió el proceso; el tamaño, cuánto.");
+  }
+  /* ---------- Ayudas del Enigma 3 ---------- */
+  var E3_TARGETS = {
+    m1: { mq: "dtf", T: 130, t: 10, short: "plancha con los valores medidos (130 °C · 10 s)" },
+    m2: { mq: "dtf", T: 160, t: 20, p: "uniforme", short: "plancha conforme (160 °C · 20 s · presión uniforme)" },
+    m3: { mq: "p3", T: 175, short: "impresora 3D con el valor medido (175 °C)" },
+    m4: { mq: "p3", T: 210, short: "impresora 3D conforme (210 °C)" }
+  };
+  function missionsLeft() {
+    return Object.keys(E3_TARGETS).filter(function (k) { return !state.e3.missions[k]; }).map(function (k) { var o = E3_TARGETS[k]; o.id = k; return o; });
+  }
+  function deltasLeft() { return Object.keys(DELTAS).filter(function (k) { return state.e3.deltas[k] === null; }).map(function (k) { return DELTAS[k].name; }); }
+  function dirTxt(cur, goal, unit, name) {
+    if (cur === goal) return name + ": " + cur + " " + unit + " ✓";
+    return name + ": estás en " + cur + " " + unit + "; " + (cur > goal ? "baja " : "sube ") + Math.abs(cur - goal) + " " + unit + " (a " + goal + " " + unit + ")";
+  }
+  function afterMiss(mq, v) {
+    if (RESTORING) return;
+    var left = missionsLeft().filter(function (m) { return m.mq === mq; });
+    state.e3.idle = (state.e3.idle || 0) + 1;
+    var box = $(mq === "dtf" ? "dtfRes" : "p3Res"), msg;
+    if (!left.length) {
+      var other = missionsLeft();
+      msg = "Esta máquina ya cumplió sus misiones." + (other.length ? " Te falta: <b>" + other[0].short + "</b>." : (deltasLeft().length ? " Ahora calcula las desviaciones en el recuadro de abajo." : ""));
+    } else {
+      /* misión pendiente más cercana a lo que probó el estudiante */
+      left.sort(function (a, b) {
+        var da = Math.abs(v.T - a.T) + (a.t ? Math.abs(v.t - a.t) * 3 : 0), db = Math.abs(v.T - b.T) + (b.t ? Math.abs(v.t - b.t) * 3 : 0);
+        return da - db;
+      });
+      var g = left[0], parts = [dirTxt(v.T, g.T, "°C", mq === "dtf" ? "Temperatura" : "Boquilla")];
+      if (g.t) parts.push(dirTxt(v.t, g.t, "s", "Tiempo"));
+      if (g.p && v.p !== g.p) parts.push("Presión: cámbiala a «Uniforme»");
+      var lvl = state.e3.hintLvl || 0;
+      if (lvl >= 1 || state.e3.idle >= 2) {
+        msg = "🧭 <b>Para la misión «" + g.short + "»:</b><br>" + parts.join("<br>");
+      } else {
+        msg = "🧭 Este intento no cumplió ninguna misión pendiente. Compara tus valores con los del reporte del Enigma 2 (fila <b>Medido</b> para reproducir la falla, fila <b>Objetivo</b> para corregirla). Las marcas «Obj.» y «Med.» de la escala también te orientan.";
+      }
+    }
+    box.insertAdjacentHTML("beforeend", '<div class="coach">' + msg + "</div>");
+    if (state.e3.idle >= 4 && (state.e3.hintLvl || 0) < 3) { state.e3.hintLvl = 3; }
+    scheduleSave(); updE3Status();
+  }
+  var E3_HINTS = [
+    "Las cuatro misiones piden dos cosas por máquina: <b>reproducir la falla</b> (usa los valores <b>Medido</b> del reporte) y <b>corregirla</b> (usa los valores <b>Objetivo</b>). El reporte está en el Enigma 2, más arriba.",
+    "Valores exactos: plancha medida <b>130 °C · 10 s</b>; plancha objetivo <b>160 °C · 20 s</b> con presión <b>uniforme</b>; boquilla medida <b>175 °C</b>; boquilla objetivo <b>210 °C</b>. Usa los botones −/+ para llegar al número exacto y luego pulsa el botón de la máquina.",
+    "Se activaron los botones <b>Cargar valores</b> debajo de cada máquina: cargan los números del reporte. Tú solo pulsas «Planchar» o «Imprimir» y observas el resultado."
+  ];
+  function showE3Hint() {
+    var lvl = Math.min((state.e3.hintLvl || 0) + 1, E3_HINTS.length);
+    state.e3.hintLvl = lvl; scheduleSave(); updE3Status(true);
+  }
+  function updFichaPend(ml, dl) {
+    var el = $("fichaPend"); if (!el) return;
+    if (!ml.length && !dl.length) { el.innerHTML = ""; return; }
+    el.innerHTML = "Te falta en el Enigma 3 (" + (ml.length + dl.length) + "): " +
+      ml.map(function (m) { return m.short; }).concat(dl.map(function (d) { return "desviación de " + d; })).join(" · ") +
+      '. <button type="button" class="btn btn-outline btn-sm" id="goE3" style="margin-left:6px">Ir al Enigma 3</button>';
+    $("goE3").addEventListener("click", function () { $("st3").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); });
+  }
+  function updE3Status(fromBtn) {
+    var box = $("e3Status"), box2 = $("e3Status2"); if (!box) return;
+    var ml = missionsLeft(), dl = deltasLeft(), lvl = state.e3.hintLvl || 0, html;
+    updFichaPend(ml, dl);
+    $("dtfQuick").hidden = lvl < 3; $("p3Quick").hidden = lvl < 3;
+    if (!ml.length && !dl.length) {
+      html = "✓ Completaste las cuatro misiones y las tres desviaciones. La Ficha técnica ya está abierta.";
+      box.className = box2.className = "e3-status all"; box.innerHTML = box2.innerHTML = html; return;
+    }
+    box.className = box2.className = "e3-status";
+    html = "<b>Para cerrar el Enigma 3 te falta (" + (ml.length + dl.length) + "):</b><ul>" +
+      ml.map(function (m) { return "<li>Misión: " + (lvl >= 2 ? m.short : m.short.replace(/\s*\(.*\)$/, "")) + "</li>"; }).join("") +
+      dl.map(function (d) { return "<li>Desviación: " + d + "</li>"; }).join("") + "</ul>";
+    var hints = "";
+    for (var i = 0; i < Math.min(lvl, E3_HINTS.length); i++) hints += '<div class="fb info">💡 <b>Pista ' + (i + 1) + ".</b> " + E3_HINTS[i] + "</div>";
+    var btn = lvl < E3_HINTS.length ? '<div class="btn-row"><button type="button" class="btn btn-outline btn-sm" data-e3hint>💡 ' + (lvl ? "Otra pista" : "Necesito una pista") + " (" + lvl + "/" + E3_HINTS.length + ")</button></div>" : "";
+    if (state.e3.idle >= 2 && lvl === 0) btn = '<p style="margin:8px 0 0">¿Atascado/a? Usar pistas no resta puntos.</p>' + btn;
+    box.innerHTML = html + hints + btn;
+    box2.innerHTML = html + btn;
+    if (fromBtn) { var last = box.querySelector(".fb:last-of-type"); if (last) last.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "nearest" }); }
+  }
+  function setRange(id, val) {
+    var el = $(id); el.value = clamp(val, +el.min, +el.max); fire(el, "input");
   }
   function checkE3() {
     var m = state.e3.missions, d = state.e3.deltas;
@@ -2878,7 +3003,21 @@ window.APP = (function () {
     $("p3Btn").addEventListener("click", runPrint);
     $("deltaBtn").addEventListener("click", checkDeltas);
     Object.keys(DELTAS).forEach(function (k) { $(k).addEventListener("keydown", function (e) { if (e.key === "Enter") checkDeltas({ target: $("deltaBtn") }); }); });
-    updDtf(); upd3d(); drawMicro(0); drawXsec(null);
+    all("[data-nudge]").forEach(function (b) {
+      b.addEventListener("click", function () { var id = b.getAttribute("data-nudge"); setRange(id, +$(id).value + +b.getAttribute("data-d")); });
+    });
+    all("[data-q]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var q = b.getAttribute("data-q");
+        if (q === "dtf-med") { setRange("dtfT", 130); setRange("dtfTime", 10); }
+        if (q === "dtf-obj") { setRange("dtfT", 160); setRange("dtfTime", 20); var u = document.querySelector('input[name="dtfP"][value="uniforme"]'); u.checked = true; fire(u, "change"); }
+        if (q === "p3-med") setRange("p3T", 175);
+        if (q === "p3-obj") setRange("p3T", 210);
+        $(q.indexOf("dtf") === 0 ? "pressBtn" : "p3Btn").focus();
+      });
+    });
+    $("st3").addEventListener("click", function (e) { if (e.target.closest("[data-e3hint]")) showE3Hint(); });
+    updDtf(); upd3d(); drawMicro(0); drawXsec(null); updE3Status();
   }
 
   /* =========================================================
@@ -3035,15 +3174,44 @@ window.APP = (function () {
   /* =========================================================
      ENIGMA FINAL · Caja fuerte, transferencia y cierre
      ========================================================= */
+  function stepDial(d, s) {
+    var inp = $("dial" + d); if (inp.disabled) return;
+    var v = parseInt(inp.value, 10) || 0;
+    inp.value = pad2((v + s + 100) % 100); clearDialMk(d);
+  }
+  function clearDialMk(d) { $("dialMk" + d).textContent = ""; $("dialMk" + d).className = "dial-mk"; $("dial" + d).classList.remove("ok", "no"); }
+  function renderSafeRef() {
+    var rows = Object.keys(DELTAS).map(function (k, i) {
+      var D = DELTAS[k], got = state.e3.deltas[k];
+      return "<tr><td>Rueda " + (i + 1) + "</td><td>" + D.name + "</td><td>" + D.med + " − " + D.obj + "</td><td><b>" + (got !== null && got !== undefined ? String(got).replace("-", "−") + " " + D.unit : "—") + "</b></td></tr>";
+    }).join("");
+    $("safeRef").innerHTML = "📋 <b>Cada rueda es una desviación del Enigma 3, escrita sin el signo menos.</b>" +
+      "<table><tr><th>Rueda</th><th>Parámetro</th><th>Medido − objetivo</th><th>Tu resultado</th></tr>" + rows + "</table>" +
+      '<p style="margin:6px 0 0">Ejemplo con otros números: si la desviación fuera −15 °C, la rueda va en <b>15</b>. Puedes escribir el número o usar + y − (mantén pulsado para avanzar rápido).</p>';
+  }
   function initLock2() {
     all(".dial-btn").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var inp = $("dial" + b.getAttribute("data-d")), v = parseInt(inp.value, 10) || 0;
-        inp.value = pad2((v + (+b.getAttribute("data-s")) + 100) % 100);
+      var d = b.getAttribute("data-d"), s = +b.getAttribute("data-s"), hold = null, rep = null;
+      function stop() { clearTimeout(hold); clearInterval(rep); hold = rep = null; }
+      b.addEventListener("pointerdown", function (e) {
+        e.preventDefault(); stepDial(d, s);
+        hold = setTimeout(function () { rep = setInterval(function () { stepDial(d, s); }, 90); }, 400);
       });
+      ["pointerup", "pointerleave", "pointercancel"].forEach(function (t) { b.addEventListener(t, stop); });
+      b.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); stepDial(d, s); } });
     });
-    all(".dial-in").forEach(function (inp) {
-      inp.addEventListener("input", function () { this.value = this.value.replace(/\D/g, "").slice(0, 2); });
+    all(".dial-in").forEach(function (inp, idx) {
+      /* Odómetro: cada dígito nuevo entra por la derecha, sin depender de que el texto esté seleccionado */
+      inp.addEventListener("beforeinput", function (e) {
+        if (e.inputType && e.inputType.indexOf("insert") === 0) {
+          e.preventDefault();
+          var dg = String(e.data || "").replace(/\D/g, ""); if (!dg) return;
+          this.value = (this.value.replace(/\D/g, "") + dg).slice(-2).padStart(2, "0");
+          clearDialMk(idx);
+        }
+      });
+      inp.addEventListener("input", function () { this.value = this.value.replace(/\D/g, "").slice(-2); clearDialMk(idx); });
+      inp.addEventListener("blur", function () { this.value = pad2(parseInt(this.value, 10) || 0); });
       inp.addEventListener("focus", function () { this.select(); });
       inp.addEventListener("keydown", function (e) {
         var v = parseInt(this.value, 10) || 0;
@@ -3053,11 +3221,12 @@ window.APP = (function () {
       });
     });
     $("lock2Btn").addEventListener("click", tryLock2);
+    renderSafeRef();
   }
   function tryLock2(ev) {
     if (state.e5.lock) return;
-    var vals = [0, 1, 2].map(function (i) { return parseInt($("dial" + i).value, 10); }), fb = $("lock2Fb");
-    if (vals.some(function (v) { return isNaN(v); })) { renderInfo(fb, "Gira las tres ruedas antes de abrir."); return; }
+    var vals = [0, 1, 2].map(function (i) { return parseInt($("dial" + i).value, 10) || 0; }), fb = $("lock2Fb");
+    if (vals.every(function (v) { return v === 0; })) { renderInfo(fb, "Las tres ruedas están en 00. Escribe en cada una el tamaño de su desviación (mira la tabla de arriba)."); return; }
     var right = vals.filter(function (v, i) { return v === LOCK2[i]; }).length, pts = nextPts("lock2", TRIES_PTS);
     logAnswer("lock2", vals.map(pad2).join(" · "), right === 3, pts);
     if (right === 3) {
@@ -3069,8 +3238,23 @@ window.APP = (function () {
       $("e5Rest").hidden = false; updClose();
     } else {
       miss("lock2");
-      renderRetry(fb, "Ruedas en la posición correcta: <b>" + right + " de 3</b>. Usa las desviaciones del Enigma 3, sin signo, en este orden: temperatura de la plancha, tiempo de la plancha y boquilla 3D.",
-        "Desviación = medido − objetivo. Su tamaño es esa diferencia sin el signo.",
+      var t = state.tries.lock2, names = ["temperatura de la plancha", "tiempo de la plancha", "boquilla 3D"],
+        MED = [30, 10, 75], OBJ = [60, 20, 10], SRC = [["130", "160"], ["10", "20"], ["175", "210"]], notes = [];
+      vals.forEach(function (v, i) {
+        var mk = $("dialMk" + i), ok = v === LOCK2[i];
+        mk.textContent = ok ? "✓" : "✗"; mk.className = "dial-mk " + (ok ? "ok" : "no");
+        $("dial" + i).classList.toggle("ok", ok); $("dial" + i).classList.toggle("no", !ok);
+        if (ok) return;
+        var n = "Rueda " + (i + 1) + " (" + names[i] + "): ";
+        if (t >= 3) n += "calcula " + SRC[i][0] + " − " + SRC[i][1] + " = −" + LOCK2[i] + " y quítale el signo: la rueda va en <b>" + LOCK2[i] + "</b>.";
+        else if (i === 2 && v === MED[2]) n += "75 sale de la lectura medida (175 °C). La rueda pide la diferencia: " + SRC[i][0] + " − " + SRC[i][1] + ".";
+        else if (v === OBJ[i]) n += "ese número sale del valor objetivo. La rueda pide la diferencia entre medido y objetivo: " + SRC[i][0] + " − " + SRC[i][1] + ".";
+        else if (t >= 2) n += "resta " + SRC[i][0] + " − " + SRC[i][1] + " y escribe el resultado sin el signo menos.";
+        else n += "revisa esta rueda con la tabla de arriba.";
+        notes.push(n);
+      });
+      renderRetry(fb, "Ruedas correctas: <b>" + right + " de 3</b> (marcadas con ✓).<br>" + notes.join("<br>"),
+        "Desviación = medido − objetivo. La rueda usa su tamaño, sin el signo.",
         "Un expediente de calidad se cierra con datos verificables, no con impresiones.");
     }
   }
