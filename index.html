@@ -101,6 +101,9 @@ h3{font-size:1.1rem;margin:1.6rem 0 .5rem}
 .kolb.ea{background:#ead9f2;color:#5a2a73}
 .lock-note{display:none;margin:12px 0 0;background:#fff;border:1.5px dashed var(--idc-gris3);border-radius:12px;padding:12px 16px;color:var(--idc-gris1);font-weight:600}
 .station.locked .lock-note{display:block}
+.lock-pend{display:block;margin-top:8px;font-weight:500;color:#173a52}
+.lock-pend ul{margin:6px 0 8px;padding-left:20px}
+.lock-pend li{margin:2px 0}
 .station.locked .st-body{filter:blur(3px) grayscale(.5);opacity:.45;pointer-events:none;user-select:none;max-height:380px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
 .st-body{margin-top:14px}
 @media (max-width:480px){.st-state{display:none}}
@@ -938,7 +941,7 @@ table.t th{background:#f2f0ea;font-weight:700}
       <div><p class="eyebrow">Ficha técnica · Verdadero o falso razonado · <span class="kolb or">OR</span></p><h2 id="fichaT">¿Por qué falla?</h2></div>
       <span class="st-state">🔒 Bloqueada</span>
     </div>
-    <p class="lock-note">🔒 Se desbloquea al completar el <b>Enigma 3 · Reproduce la falla</b>.<span id="fichaPend" style="display:block;margin-top:6px"></span></p>
+    <p class="lock-note">🔒 Se desbloquea al completar el <b>Enigma 3 · Reproduce la falla</b>.</p>
     <div class="st-body">
       <details class="card proto">
         <summary>📄 Protocolo del expediente: relación entre el defecto y el valor reportado</summary>
@@ -2061,6 +2064,7 @@ window.APP = (function () {
       }
       if (tag) tag.textContent = state.gates[st.gate] ? "✓ Completada" : (open ? "En curso" : "🔒 Bloqueada");
     });
+    schedulePend();
   }
   function completeStation(gate) {
     if (state.gates[gate]) return;
@@ -2076,6 +2080,70 @@ window.APP = (function () {
     var next = STATION_ORDER[idx + 1];
     if (next) setTimeout(function () { var el = $(next.id); if (el) el.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" }); }, 1100);
   }
+  /* ---------- Qué falta para abrir cada estación ---------- */
+  function pendingFor(gate) {
+    var m = [], e1 = state.e1 || {}, seen = e1.seen || {};
+    if (gate === "registro") m.push("Escribe tus nombres, apellidos y correo, y pulsa <b>Firmar y empezar →</b>.");
+    if (gate === "e1") {
+      if (!e1.obsA) {
+        if (!seen["1"] || !seen["2"]) m.push("Camiseta: revisa los <b>dos diseños</b>.");
+        if ((e1.stretchMax || 0) < 60) m.push("Camiseta: estírala al menos al <b>60 %</b> (vas en " + (e1.stretchMax || 0) + " %).");
+        if (!e1.washes) m.push("Camiseta: pulsa <b>🧺 Lavar</b> una vez.");
+        m.push("Camiseta: marca lo que observaste y pulsa <b>Registrar observación</b>.");
+      }
+      if (!e1.obsB) {
+        if (!e1.broke) m.push("Llavero: aplica fuerza hasta ver qué le pasa.");
+        m.push("Llavero: marca lo que observaste y pulsa <b>Registrar observación</b>.");
+      }
+      if (!e1.hyp) m.push("Elige tu hipótesis y pulsa <b>Registrar hipótesis</b>.");
+    }
+    if (gate === "check") {
+      var bx = all(".pre-chk"), off = bx.filter(function (b) { return !b.checked; }).length;
+      if (off) m.push("Marca " + (off === bx.length ? "las " + off + " casillas" : (off === 1 ? "la casilla que falta" : "las " + off + " casillas que faltan")) + " de la lista.");
+      m.push("Pulsa <b>Continuar al archivador →</b>.");
+    }
+    if (gate === "e2") {
+      if (!state.e2.lock) m.push("Abre el candado del archivador (clave de 3 dígitos; usa las 4 pistas).");
+      if (!state.e2.def) m.push("Elige la definición correcta de <b>delaminación</b>.");
+      var left = MATCH.length - Object.keys(state.e2.matched || {}).length;
+      if (left) m.push("Conecta " + (left === 1 ? "el concepto que falta" : "los " + left + " conceptos que faltan") + " con su evidencia.");
+    }
+    if (gate === "e3") {
+      missionsLeft().forEach(function (x) { m.push("Misión: " + x.short + "; pulsa el botón de la máquina."); });
+      deltasLeft().forEach(function (d) { m.push("Desviación: " + d + " (medido − objetivo, con signo)."); });
+    }
+    if (gate === "ficha") {
+      var n = VF.length - Object.keys(state.ficha.answers || {}).length;
+      if (n) m.push("Responde " + (n === 1 ? "la afirmación que falta" : "las " + n + " afirmaciones que faltan") + " (Verdadero o Falso).");
+    }
+    if (gate === "video") {
+      VQ.forEach(function (q, i) { if (state.video.ans[q.id] === undefined) m.push("Pregunta " + (i + 1) + " del video: " + q.label + "."); });
+    }
+    if (gate === "e4") {
+      ANAGRAMS.forEach(function (a, i) { if (!state.e4.solved[a.id]) m.push("Anagrama " + (i + 1) + ": " + a.hint); });
+    }
+    if (gate === "e5") missingClose().forEach(function (x) { m.push(x.charAt(0).toUpperCase() + x.slice(1) + "."); });
+    return m;
+  }
+  function refreshPend() {
+    STATION_ORDER.forEach(function (st, i) {
+      var sec = $(st.id); if (!sec) return;
+      var note = sec.querySelector(".lock-note"); if (!note) return;
+      var box = note.querySelector(".lock-pend");
+      if (!box) { box = document.createElement("span"); box.className = "lock-pend"; note.appendChild(box); }
+      if (isOpen(i)) { box.innerHTML = ""; return; }
+      var bi = -1;
+      for (var j = 0; j < i; j++) if (!state.gates[STATION_ORDER[j].gate]) { bi = j; break; }
+      if (bi < 0) { box.innerHTML = ""; return; }
+      var b = STATION_ORDER[bi], items = pendingFor(b.gate);
+      box.innerHTML = (bi === i - 1 ? "Para abrir esta parte te falta, en <b>" + b.name + "</b>:" :
+        "Antes debes terminar <b>" + b.name + "</b>. Ahí te falta:") +
+        "<ul>" + items.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul>" +
+        '<button type="button" class="btn btn-outline btn-sm" data-goto="' + b.id + '">Ir a ' + b.name + " ↑</button>";
+    });
+  }
+  var pendTimer = null;
+  function schedulePend() { clearTimeout(pendTimer); pendTimer = setTimeout(refreshPend, 60); }
   function badgesEarned() {
     return STATION_ORDER.filter(function (x) { return x.badge && state.gates[x.gate]; }).map(function (x) { return x.badge; });
   }
@@ -2968,7 +3036,7 @@ window.APP = (function () {
   function updE3Status(fromBtn) {
     var box = $("e3Status"), box2 = $("e3Status2"); if (!box) return;
     var ml = missionsLeft(), dl = deltasLeft(), lvl = state.e3.hintLvl || 0, html;
-    updFichaPend(ml, dl);
+    schedulePend();
     $("dtfQuick").hidden = lvl < 3; $("p3Quick").hidden = lvl < 3;
     if (!ml.length && !dl.length) {
       html = "✓ Completaste las cuatro misiones y las tres desviaciones. La Ficha técnica ya está abierta.";
@@ -3599,6 +3667,12 @@ window.APP = (function () {
     initModals(); initRegistro(); initE1(); initCheck();
     initLock1(); initDef(); initMatch(); initE3(); initVF(); initVideo(); initVQ(); initAna();
     initLock2(); initTransfer(); initRevisit(); initClose(); initConstancia();
+    ["click", "input", "change"].forEach(function (t) { document.addEventListener(t, schedulePend, true); });
+    document.addEventListener("click", function (e) {
+      var g = e.target.closest("[data-goto]"); if (!g) return;
+      var el = $(g.getAttribute("data-goto")); if (el) el.scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "start" });
+    });
+    refreshPend();
     refreshLocks(); updateScore(false); updateProgress(); updClose();
     offerResume();
     window.addEventListener("pagehide", function () { if (!RESETTING && state.student) saveNow(); });
